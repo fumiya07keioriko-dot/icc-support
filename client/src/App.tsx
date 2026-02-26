@@ -4,35 +4,54 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
+import { PinAuthProvider, usePinAuth } from "./contexts/PinAuthContext";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Staff from "./pages/Staff";
+import Tasks from "./pages/Tasks";
+import VenueMap from "./pages/VenueMap";
+import Tetris from "./pages/Tetris";
+import Admin from "./pages/Admin";
+import { Loader2 } from "lucide-react";
 
-function Router() {
-  // make sure to consider if you need authentication for certain routes
+function AuthGate() {
+  const { authenticated, loading } = usePinAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-blue-900">
+        <Loader2 className="w-8 h-8 animate-spin text-white" />
+      </div>
+    );
+  }
+
+  if (!authenticated) {
+    return <Login />;
+  }
+
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
+      <Route path="/" component={Dashboard} />
+      <Route path="/staff" component={Staff} />
+      <Route path="/tasks" component={Tasks} />
+      <Route path="/map" component={VenueMap} />
+      <Route path="/tetris" component={Tetris} />
+      <Route path="/admin" component={Admin} />
+      <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <PinAuthProvider>
+            <AuthGate />
+          </PinAuthProvider>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

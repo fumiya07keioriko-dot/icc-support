@@ -43,6 +43,14 @@
 }
 
 :root {
+  /* ICC ブランドカラー：ネイビー×ホワイト×アクセントオレンジ */
+  --status-active: oklch(0.55 0.18 145);
+  --status-moving: oklch(0.65 0.18 50);
+  --status-break: oklch(0.60 0.12 280);
+  --status-available: oklch(0.50 0.15 200);
+  --priority-high: oklch(0.55 0.2 25);
+  --priority-medium: oklch(0.65 0.18 50);
+  --priority-low: oklch(0.55 0.12 145);
   --primary: var(--color-blue-700);
   --primary-foreground: var(--color-blue-50);
   --sidebar-primary: var(--color-blue-600);
@@ -119,6 +127,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "Noto Sans JP", "Hiragino Sans", sans-serif;
+    -webkit-tap-highlight-color: transparent;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
