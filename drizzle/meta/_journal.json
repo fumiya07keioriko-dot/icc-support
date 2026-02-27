@@ -15,6 +15,13 @@
       "when": 1772117042354,
       "tag": "0001_acoustic_ozymandias",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1772174999806,
+      "tag": "0002_elite_molten_man",
+      "breakpoints": true
     }
   ]
 }

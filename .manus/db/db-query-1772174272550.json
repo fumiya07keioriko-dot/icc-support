@@ -1,0 +1,30 @@
+{
+  "query": "SELECT staffId, name FROM staff;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Bo7gkxM8kvzgh6.774cbd8f1df2 --database eroFdXXcvc5nWpGwBUJqos --execute SELECT staffId, name FROM staff;",
+  "rows": [
+    {
+      "staffId": "yuuyu",
+      "name": "ゆうゆ"
+    },
+    {
+      "staffId": "fumiya",
+      "name": "ふみや"
+    },
+    {
+      "staffId": "susshy",
+      "name": "すっしー"
+    },
+    {
+      "staffId": "yumeka",
+      "name": "ゆめか"
+    },
+    {
+      "staffId": "babe",
+      "name": "ばべちゃん"
+    }
+  ],
+  "messages": [],
+  "stdout": "staffId\tname\nyuuyu\tゆうゆ\nfumiya\tふみや\nsusshy\tすっしー\nyumeka\tゆめか\nbabe\tばべちゃん\n",
+  "stderr": "",
+  "execution_time_ms": 1515
+}

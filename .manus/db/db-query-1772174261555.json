@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE staff SET name = 'すっしー', staffId = 'susshy' WHERE staffId = 'tsucchy' OR name = 'つっちー';\nUPDATE staff_status SET staffId = 'susshy' WHERE staffId = 'tsucchy';\nUPDATE tetris_entries SET staffId = 'susshy' WHERE staffId = 'tsucchy';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Bo7gkxM8kvzgh6.774cbd8f1df2 --database eroFdXXcvc5nWpGwBUJqos --execute UPDATE staff SET name = 'すっしー', staffId = 'susshy' WHERE staffId = 'tsucchy' OR name = 'つっちー';\nUPDATE staff_status SET staffId = 'susshy' WHERE staffId = 'tsucchy';\nUPDATE tetris_entries SET staffId = 'susshy' WHERE staffId = 'tsucchy';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2059
+}

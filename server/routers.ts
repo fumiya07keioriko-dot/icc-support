@@ -5,6 +5,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
+import { syncTetrisFromSheets, getLastSyncResult } from "./sheetsSync";
 import {
   getConfig,
   setConfig,
@@ -253,6 +254,15 @@ const tetrisRouter = router({
   list: publicProcedure.query(async ({ ctx }) => {
     if (!(await validatePinSession(ctx.req))) throw new TRPCError({ code: "UNAUTHORIZED" });
     return getTetrisEntries();
+  }),
+  syncStatus: publicProcedure.query(async ({ ctx }) => {
+    if (!(await validatePinSession(ctx.req))) throw new TRPCError({ code: "UNAUTHORIZED" });
+    return getLastSyncResult();
+  }),
+  manualSync: publicProcedure.mutation(async ({ ctx }) => {
+    if (!(await validatePinSession(ctx.req))) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const result = await syncTetrisFromSheets();
+    return result;
   }),
 });
 

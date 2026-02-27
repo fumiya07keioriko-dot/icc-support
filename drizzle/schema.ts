@@ -125,6 +125,7 @@ export const tetrisEntries = mysqlTable("tetris_entries", {
   timeSlot: varchar("timeSlot", { length: 32 }).notNull(), // "7:30", "9:00-10:00"
   staffId: varchar("staffId", { length: 32 }).notNull(),
   content: text("content").notNull(),
+  category: varchar("category", { length: 100 }).default(""),
   sortOrder: int("sortOrder").default(0).notNull(),
 });
 

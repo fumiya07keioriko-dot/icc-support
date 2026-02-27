@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { startAutoSync } from "../sheetsSync";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -59,6 +60,12 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    // Google Sheets自動同期（5分ごと）
+    if (process.env.GOOGLE_SHEETS_API_KEY) {
+      startAutoSync(5 * 60 * 1000);
+    } else {
+      console.warn("[TetrisSync] GOOGLE_SHEETS_API_KEY not set, auto sync disabled");
+    }
   });
 }
 

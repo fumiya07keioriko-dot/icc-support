@@ -1,0 +1,1 @@
+ALTER TABLE `tetris_entries` ADD `category` varchar(100) DEFAULT '';
