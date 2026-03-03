@@ -86,7 +86,7 @@ export const staffStatus = mysqlTable("staff_status", {
   venueId: int("venueId"),
   areaId: int("areaId"),
   workContent: varchar("workContent", { length: 255 }).default("").notNull(),
-  status: mysqlEnum("status", ["active", "moving", "break", "available"]).default("active").notNull(),
+  status: mysqlEnum("status", ["active", "moving", "break_1f", "break_3f", "break_room"]).default("active").notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
@@ -107,6 +107,7 @@ export const tasks = mysqlTable("tasks", {
   venueId: int("venueId"),
   areaId: int("areaId"),
   dueDate: timestamp("dueDate"),
+  reminderAt: timestamp("reminderAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

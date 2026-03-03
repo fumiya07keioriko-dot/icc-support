@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus, Pencil, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, ChevronDown, ChevronUp, Bell, BellOff, BellRing } from "lucide-react";
 import { toast } from "sonner";
+import { useNotification } from "@/hooks/useNotification";
 
 const PRIORITY_OPTIONS = [
   { value: "high",   label: "高", color: "bg-red-100 text-red-700 border-red-200" },
@@ -26,10 +26,38 @@ const STATE_OPTIONS = [
 type Priority = typeof PRIORITY_OPTIONS[number]["value"];
 type State = typeof STATE_OPTIONS[number]["value"];
 
-const STAFF_IDS = ["yuuyu", "fumiya", "tsucchi", "yumeka", "babe"];
+const STAFF_IDS = ["yuuyu", "fumiya", "susshy", "yumeka", "babe"];
 const STAFF_NAMES: Record<string, string> = {
-  yuuyu: "ゆうゆ", fumiya: "ふみや", tsucchi: "つっちー", yumeka: "ゆめか", babe: "ばべちゃん",
+  yuuyu: "ゆうゆ", fumiya: "ふみや", susshy: "すっしー", yumeka: "ゆめか", babe: "ばべちゃん",
 };
+
+/** Date → "YYYY-MM-DDTHH:mm" (datetime-local input用) */
+function toDatetimeLocal(date: Date | null | undefined): string {
+  if (!date) return "";
+  const d = new Date(date);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** "YYYY-MM-DDTHH:mm" → Date | null */
+function fromDatetimeLocal(str: string): Date | null {
+  if (!str) return null;
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatReminderLabel(date: Date | null | undefined): string {
+  if (!date) return "";
+  const d = new Date(date);
+  const now = new Date();
+  const diff = d.getTime() - now.getTime();
+  if (diff < 0) return `${d.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}（期限切れ）`;
+  const min = Math.floor(diff / 60000);
+  if (min < 60) return `${min}分後`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h}時間後`;
+  return d.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
 
 const emptyForm = {
   title: "",
@@ -39,10 +67,13 @@ const emptyForm = {
   assigneeId: "" as string,
   venueId: null as number | null,
   areaId: null as number | null,
+  reminderAt: "" as string, // datetime-local string
 };
 
 export default function Tasks() {
   const utils = trpc.useUtils();
+  const { isSupported, permission, requestPermission, scheduleReminder, cancelReminder } = useNotification();
+
   const [showCompleted, setShowCompleted] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -53,17 +84,53 @@ export default function Tasks() {
   const venueQuery = trpc.venue.list.useQuery();
 
   const createMutation = trpc.task.create.useMutation({
-    onSuccess: () => { utils.task.list.invalidate(); toast.success("タスクを作成しました"); setIsDialogOpen(false); },
+    onSuccess: (data) => {
+      utils.task.list.invalidate();
+      toast.success("タスクを作成しました");
+      setIsDialogOpen(false);
+      // リマインダーをスケジュール
+      const reminderDate = fromDatetimeLocal(form.reminderAt);
+      if (reminderDate && reminderDate > new Date() && permission === "granted") {
+        scheduleReminder({ taskId: data.id, title: form.title, reminderAt: reminderDate });
+        toast.info(`リマインダーを設定しました（${formatReminderLabel(reminderDate)}）`);
+      }
+    },
     onError: () => toast.error("作成に失敗しました"),
   });
+
   const updateMutation = trpc.task.update.useMutation({
-    onSuccess: () => { utils.task.list.invalidate(); toast.success("タスクを更新しました"); setIsDialogOpen(false); },
+    onSuccess: () => {
+      utils.task.list.invalidate();
+      toast.success("タスクを更新しました");
+      setIsDialogOpen(false);
+      // リマインダーを再スケジュール
+      if (editingId !== null) {
+        cancelReminder(editingId);
+        const reminderDate = fromDatetimeLocal(form.reminderAt);
+        if (reminderDate && reminderDate > new Date() && permission === "granted") {
+          scheduleReminder({ taskId: editingId, title: form.title, reminderAt: reminderDate });
+          toast.info(`リマインダーを更新しました（${formatReminderLabel(reminderDate)}）`);
+        }
+      }
+    },
     onError: () => toast.error("更新に失敗しました"),
   });
+
   const deleteMutation = trpc.task.delete.useMutation({
     onSuccess: () => { utils.task.list.invalidate(); toast.success("タスクを削除しました"); },
     onError: () => toast.error("削除に失敗しました"),
   });
+
+  // ページロード時に既存リマインダーを再登録
+  useEffect(() => {
+    if (!taskQuery.data || permission !== "granted") return;
+    const now = new Date();
+    taskQuery.data.forEach((t) => {
+      if (t.reminderAt && new Date(t.reminderAt) > now && t.state !== "done") {
+        scheduleReminder({ taskId: t.id, title: t.title, reminderAt: t.reminderAt });
+      }
+    });
+  }, [taskQuery.data, permission]);
 
   const taskList = taskQuery.data ?? [];
   const venueList = venueQuery.data ?? [];
@@ -85,6 +152,7 @@ export default function Tasks() {
       assigneeId: t.assigneeId ?? "",
       venueId: t.venueId ?? null,
       areaId: t.areaId ?? null,
+      reminderAt: toDatetimeLocal(t.reminderAt ? new Date(t.reminderAt) : null),
     });
     setEditingId(t.id);
     setIsDialogOpen(true);
@@ -92,6 +160,8 @@ export default function Tasks() {
 
   const handleSave = () => {
     if (!form.title.trim()) { toast.error("タイトルを入力してください"); return; }
+    const reminderDate = fromDatetimeLocal(form.reminderAt);
+
     if (editingId !== null) {
       updateMutation.mutate({
         id: editingId,
@@ -102,6 +172,7 @@ export default function Tasks() {
         assigneeId: form.assigneeId || null,
         venueId: form.venueId,
         areaId: form.areaId,
+        reminderAt: reminderDate,
       });
     } else {
       createMutation.mutate({
@@ -111,18 +182,29 @@ export default function Tasks() {
         assigneeId: form.assigneeId || undefined,
         venueId: form.venueId ?? undefined,
         areaId: form.areaId ?? undefined,
+        reminderAt: reminderDate ?? undefined,
       });
     }
   };
 
   const handleQuickDone = (t: typeof taskList[0]) => {
-    updateMutation.mutate({ id: t.id, state: t.state === "done" ? "todo" : "done" });
+    const newState = t.state === "done" ? "todo" : "done";
+    updateMutation.mutate({ id: t.id, state: newState });
+    if (newState === "done") cancelReminder(t.id);
+  };
+
+  const handleRequestNotification = async () => {
+    const granted = await requestPermission();
+    if (granted) {
+      toast.success("通知が許可されました");
+    } else {
+      toast.error("通知が拒否されました。ブラウザの設定から許可してください");
+    }
   };
 
   const priorityOpt = (p: string) => PRIORITY_OPTIONS.find((o) => o.value === p);
   const stateOpt = (s: string) => STATE_OPTIONS.find((o) => o.value === s);
 
-  // 優先度でソート
   const sortedTasks = [...taskList].sort((a, b) => {
     const order = { high: 0, medium: 1, low: 2 };
     return (order[a.priority as Priority] ?? 1) - (order[b.priority as Priority] ?? 1);
@@ -140,6 +222,26 @@ export default function Tasks() {
         </button>
       }
     >
+      {/* 通知許可バナー */}
+      {isSupported && permission === "default" && (
+        <div className="mb-3 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5">
+          <Bell className="w-4 h-4 text-blue-600 flex-shrink-0" />
+          <span className="text-xs text-blue-700 flex-1">リマインダー通知を有効にしますか？</span>
+          <button
+            onClick={handleRequestNotification}
+            className="text-xs font-semibold text-blue-700 bg-blue-100 px-2.5 py-1 rounded-lg active:bg-blue-200"
+          >
+            許可する
+          </button>
+        </div>
+      )}
+      {isSupported && permission === "denied" && (
+        <div className="mb-3 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5">
+          <BellOff className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <span className="text-xs text-gray-500">通知がブロックされています。ブラウザ設定から許可してください</span>
+        </div>
+      )}
+
       {/* フィルター */}
       <div className="flex items-center gap-2 mb-4">
         <button
@@ -170,6 +272,8 @@ export default function Tasks() {
             const sOpt = stateOpt(t.state);
             const isExpanded = expandedId === t.id;
             const isDone = t.state === "done";
+            const hasReminder = !!t.reminderAt;
+            const reminderPast = hasReminder && new Date(t.reminderAt!) < new Date();
 
             return (
               <Card key={t.id} className={`shadow-none border transition-colors ${isDone ? "border-gray-100 bg-gray-50" : "border-gray-100 bg-white"}`}>
@@ -198,6 +302,13 @@ export default function Tasks() {
                             {STAFF_NAMES[t.assigneeId] ?? t.assigneeId}
                           </span>
                         )}
+                        {hasReminder && (
+                          <span className={`flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded
+                            ${reminderPast ? "bg-red-50 text-red-500" : "bg-yellow-50 text-yellow-700"}`}>
+                            <BellRing className="w-3 h-3" />
+                            {formatReminderLabel(t.reminderAt ? new Date(t.reminderAt) : null)}
+                          </span>
+                        )}
                       </div>
                       <p className={`text-sm font-medium mt-1 ${isDone ? "line-through text-gray-400" : "text-gray-800"}`}>
                         {t.title}
@@ -223,7 +334,10 @@ export default function Tasks() {
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm("このタスクを削除しますか？")) deleteMutation.mutate({ id: t.id });
+                          if (confirm("このタスクを削除しますか？")) {
+                            deleteMutation.mutate({ id: t.id });
+                            cancelReminder(t.id);
+                          }
                         }}
                         className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-500"
                       >
@@ -344,6 +458,53 @@ export default function Tasks() {
                 </Select>
               </div>
             )}
+
+            {/* リマインダー */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                <BellRing className="w-4 h-4 text-yellow-600" />
+                リマインダー（任意）
+              </label>
+              {permission === "denied" ? (
+                <p className="text-xs text-red-500">通知がブロックされています。ブラウザ設定から許可してください。</p>
+              ) : permission === "default" ? (
+                <div className="space-y-2">
+                  <Input
+                    type="datetime-local"
+                    value={form.reminderAt}
+                    onChange={(e) => setForm((f) => ({ ...f, reminderAt: e.target.value }))}
+                    className="text-sm"
+                  />
+                  {form.reminderAt && (
+                    <p className="text-xs text-orange-600">
+                      ⚠️ 通知を受け取るには「許可する」が必要です
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleRequestNotification}
+                    className="w-full text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg py-2 font-medium"
+                  >
+                    <Bell className="w-3.5 h-3.5 inline mr-1" />通知を許可する
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <Input
+                    type="datetime-local"
+                    value={form.reminderAt}
+                    onChange={(e) => setForm((f) => ({ ...f, reminderAt: e.target.value }))}
+                    className="text-sm"
+                  />
+                  {form.reminderAt && (
+                    <p className="text-xs text-green-600 flex items-center gap-1">
+                      <Bell className="w-3 h-3" />
+                      {formatReminderLabel(fromDatetimeLocal(form.reminderAt))}に通知
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* 説明 */}
             <div>

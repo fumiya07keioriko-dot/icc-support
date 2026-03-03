@@ -1,0 +1,2 @@
+ALTER TABLE `staff_status` MODIFY COLUMN `status` enum('active','moving','break_1f','break_3f','break_room') NOT NULL DEFAULT 'active';--> statement-breakpoint
+ALTER TABLE `tasks` ADD `reminderAt` timestamp;

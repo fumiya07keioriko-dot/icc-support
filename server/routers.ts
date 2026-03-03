@@ -160,7 +160,7 @@ const staffRouter = router({
         venueId: z.number().nullable(),
         areaId: z.number().nullable(),
         workContent: z.string().max(255),
-        status: z.enum(["active", "moving", "break", "available"]),
+        status: z.enum(["active", "moving", "break_1f", "break_3f", "break_room"]),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -202,6 +202,7 @@ const taskRouter = router({
         venueId: z.number().optional(),
         areaId: z.number().optional(),
         dueDate: z.date().optional(),
+        reminderAt: z.date().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -215,6 +216,7 @@ const taskRouter = router({
         venueId: input.venueId ?? null,
         areaId: input.areaId ?? null,
         dueDate: input.dueDate ?? null,
+        reminderAt: input.reminderAt ?? null,
       });
       return { id };
     }),
@@ -231,6 +233,7 @@ const taskRouter = router({
         venueId: z.number().nullable().optional(),
         areaId: z.number().nullable().optional(),
         dueDate: z.date().nullable().optional(),
+        reminderAt: z.date().nullable().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {

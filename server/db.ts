@@ -178,7 +178,7 @@ export async function upsertStaffStatus(data: {
   venueId: number | null;
   areaId: number | null;
   workContent: string;
-  status: "active" | "moving" | "break" | "available";
+  status: "active" | "moving" | "break_1f" | "break_3f" | "break_room";
 }): Promise<void> {
   const db = await getDb();
   if (!db) return;
