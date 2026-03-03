@@ -5,6 +5,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { PinAuthProvider, usePinAuth } from "./contexts/PinAuthContext";
+import { MySelfProvider } from "./contexts/MySelfContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Staff from "./pages/Staff";
@@ -50,7 +51,9 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <PinAuthProvider>
-            <AuthGate />
+            <MySelfProvider>
+              <AuthGate />
+            </MySelfProvider>
           </PinAuthProvider>
         </TooltipProvider>
       </ThemeProvider>

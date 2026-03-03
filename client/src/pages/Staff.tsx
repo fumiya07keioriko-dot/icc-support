@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, MapPin, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { useMyself } from "@/contexts/MySelfContext";
 
 const STATUS_OPTIONS = [
   { value: "active",     label: "稼働中",         emoji: "🟢", bg: "bg-green-50",  border: "border-green-300",  badge: "bg-green-100 text-green-800",   cardBg: "bg-green-50",  cardBorder: "border-green-200" },
@@ -37,6 +38,7 @@ export default function Staff() {
   const utils = trpc.useUtils();
   const staffQuery = trpc.staff.list.useQuery();
   const venueQuery = trpc.venue.list.useQuery();
+  const { myStaffId } = useMyself();
 
   // 詳細編集用モーダル
   const [editingMember, setEditingMember] = useState<(typeof staffList)[0] | null>(null);
@@ -50,6 +52,14 @@ export default function Staff() {
 
   const staffList = staffQuery.data ?? [];
   const venueList = venueQuery.data ?? [];
+
+  // 自分を先頭に並び替え
+  const sortedStaffList = myStaffId
+    ? [
+        ...staffList.filter((s) => s.staffId === myStaffId),
+        ...staffList.filter((s) => s.staffId !== myStaffId),
+      ]
+    : staffList;
 
   // ステータスをワンタップで即時更新
   const handleStatusTap = async (staffId: string, newStatus: StatusValue, currentData: typeof staffList[0]) => {
@@ -125,20 +135,26 @@ export default function Staff() {
     <AppLayout title="スタッフ状況">
       {/* 2行×3列グリッド */}
       <div className="grid grid-cols-3 gap-2.5">
-        {staffList.map((member) => {
+        {sortedStaffList.map((member) => {
           const currentStatus = (member.status ?? "active") as StatusValue;
           const statusOpt = STATUS_OPTIONS.find((s) => s.value === currentStatus) ?? STATUS_OPTIONS[0];
           const isUpdating = updatingStatusId === member.staffId;
+          const isMe = member.staffId === myStaffId;
 
           return (
             <button
               key={member.staffId}
               onClick={() => openEdit(member)}
               disabled={isUpdating}
-              className={`relative rounded-2xl border-2 p-3 text-left transition-all active:scale-95 shadow-sm
-                ${statusOpt.cardBg} ${statusOpt.cardBorder}
+              className={`relative rounded-2xl border-2 p-3 text-left transition-all active:scale-95
+                ${statusOpt.cardBg}
+                ${isMe ? "border-blue-400 ring-2 ring-blue-300 ring-offset-1 shadow-lg" : `${statusOpt.cardBorder} shadow-sm`}
                 ${isUpdating ? "opacity-60" : ""}`}
             >
+              {/* 自分バッジ */}
+              {isMe && (
+                <div className="text-xs text-blue-600 font-bold text-center mb-0.5 leading-none">👤 自分</div>
+              )}
               {/* アバター */}
               <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg mb-2 mx-auto
                 ${currentStatus === "active" ? "bg-green-500" :

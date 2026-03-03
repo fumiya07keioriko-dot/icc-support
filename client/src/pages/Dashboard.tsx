@@ -1,14 +1,18 @@
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import AppLayout from "@/components/AppLayout";
-import { Users, CheckSquare, Map, Calendar, AlertCircle, Clock, ChevronRight, MapPin } from "lucide-react";
+import { Users, CheckSquare, Map, Calendar, AlertCircle, Clock, ChevronRight, MapPin, UserCircle } from "lucide-react";
 import { usePinAuth } from "@/contexts/PinAuthContext";
+import { useMyself } from "@/contexts/MySelfContext";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const STATUS_OPTIONS: Record<string, { label: string; emoji: string; badge: string; cardBg: string; cardBorder: string; avatarBg: string }> = {
-  active:     { label: "稼働中",      emoji: "🟢", badge: "bg-green-100 text-green-800",   cardBg: "bg-green-50",  cardBorder: "border-green-200",  avatarBg: "bg-green-500" },
-  moving:     { label: "移動中",      emoji: "🟠", badge: "bg-orange-100 text-orange-800", cardBg: "bg-orange-50", cardBorder: "border-orange-200", avatarBg: "bg-orange-400" },
-  break_1f:   { label: "休憩（1F）",  emoji: "☕", badge: "bg-purple-100 text-purple-800", cardBg: "bg-purple-50", cardBorder: "border-purple-200", avatarBg: "bg-purple-400" },
-  break_3f:   { label: "休憩（3F）",  emoji: "☕", badge: "bg-violet-100 text-violet-800", cardBg: "bg-violet-50", cardBorder: "border-violet-200", avatarBg: "bg-violet-400" },
+  active:     { label: "稼働中",        emoji: "🟢", badge: "bg-green-100 text-green-800",   cardBg: "bg-green-50",  cardBorder: "border-green-200",  avatarBg: "bg-green-500" },
+  moving:     { label: "移動中",        emoji: "🟠", badge: "bg-orange-100 text-orange-800", cardBg: "bg-orange-50", cardBorder: "border-orange-200", avatarBg: "bg-orange-400" },
+  break_1f:   { label: "休憩（1F）",    emoji: "☕", badge: "bg-purple-100 text-purple-800", cardBg: "bg-purple-50", cardBorder: "border-purple-200", avatarBg: "bg-purple-400" },
+  break_3f:   { label: "休憩（3F）",    emoji: "☕", badge: "bg-violet-100 text-violet-800", cardBg: "bg-violet-50", cardBorder: "border-violet-200", avatarBg: "bg-violet-400" },
   break_room: { label: "休憩（控え室）", emoji: "🛋️", badge: "bg-slate-100 text-slate-700",  cardBg: "bg-slate-50",  cardBorder: "border-slate-200",  avatarBg: "bg-slate-400" },
 };
 
@@ -18,10 +22,6 @@ const PRIORITY_COLORS: Record<string, string> = {
   low: "bg-green-100 text-green-700",
 };
 const PRIORITY_LABELS: Record<string, string> = { high: "高", medium: "中", low: "低" };
-
-const STAFF_NAMES: Record<string, string> = {
-  yuuyu: "ゆうゆ", fumiya: "ふみや", susshy: "すっしー", yumeka: "ゆめか", babe: "ばべちゃん",
-};
 
 function formatRelativeTime(date: Date | null | undefined): string {
   if (!date) return "未更新";
@@ -36,12 +36,33 @@ function formatRelativeTime(date: Date | null | undefined): string {
 
 export default function Dashboard() {
   const { logout } = usePinAuth();
+  const { myStaffId, setMyStaffId } = useMyself();
   const staffQuery = trpc.staff.list.useQuery();
   const taskQuery = trpc.task.list.useQuery({ includeCompleted: false });
 
   const staffList = staffQuery.data ?? [];
   const taskList = taskQuery.data ?? [];
   const urgentTasks = taskList.filter((t) => t.priority === "high" && t.state !== "done");
+
+  // 自分を選択ダイアログ（初回のみ表示）
+  const [showMyselfDialog, setShowMyselfDialog] = useState(false);
+
+  useEffect(() => {
+    // スタッフデータが読み込まれ、まだ自分が未選択なら初回ダイアログを表示
+    if (!staffQuery.isLoading && staffList.length > 0 && !myStaffId) {
+      setShowMyselfDialog(true);
+    }
+  }, [staffQuery.isLoading, staffList.length, myStaffId]);
+
+  // 自分を先頭に並び替えたスタッフリスト
+  const sortedStaffList = myStaffId
+    ? [
+        ...staffList.filter((s) => s.staffId === myStaffId),
+        ...staffList.filter((s) => s.staffId !== myStaffId),
+      ]
+    : staffList;
+
+  const myStaff = staffList.find((s) => s.staffId === myStaffId);
 
   const now = new Date();
   const dateStr = now.toLocaleDateString("ja-JP", { month: "numeric", day: "numeric", weekday: "short" });
@@ -51,9 +72,19 @@ export default function Dashboard() {
     <AppLayout
       title="ICC Support"
       headerRight={
-        <button onClick={logout} className="text-blue-200 text-xs hover:text-white px-2 py-1">
-          ログアウト
-        </button>
+        <div className="flex items-center gap-2">
+          {/* 自分の名前表示（タップで変更） */}
+          <button
+            onClick={() => setShowMyselfDialog(true)}
+            className="flex items-center gap-1 text-blue-200 text-xs hover:text-white px-2 py-1 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <UserCircle className="w-3.5 h-3.5" />
+            <span>{myStaff ? myStaff.name : "自分を選択"}</span>
+          </button>
+          <button onClick={logout} className="text-blue-200 text-xs hover:text-white px-2 py-1">
+            ログアウト
+          </button>
+        </div>
       }
     >
       {/* 日時バー */}
@@ -91,11 +122,18 @@ export default function Dashboard() {
           <div className="text-xs text-gray-400 py-3 text-center">読み込み中...</div>
         ) : (
           <div className="grid grid-cols-3 gap-2">
-            {staffList.map((s) => {
+            {sortedStaffList.map((s) => {
               const opt = STATUS_OPTIONS[s.status] ?? STATUS_OPTIONS["active"];
+              const isMe = s.staffId === myStaffId;
               return (
                 <Link key={s.staffId} href="/staff">
-                  <div className={`rounded-xl border p-2 text-center ${opt.cardBg} ${opt.cardBorder}`}>
+                  <div className={`rounded-xl border-2 p-2 text-center transition-all ${opt.cardBg}
+                    ${isMe ? "border-blue-400 ring-2 ring-blue-300 ring-offset-1 shadow-md" : opt.cardBorder}`}
+                  >
+                    {/* 「自分」バッジ */}
+                    {isMe && (
+                      <div className="text-xs text-blue-600 font-bold mb-0.5 leading-none">👤 自分</div>
+                    )}
                     {/* アバター */}
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm mx-auto mb-1 ${opt.avatarBg}`}>
                       {s.name.charAt(0)}
@@ -156,7 +194,7 @@ export default function Dashboard() {
                   <span className="text-sm text-gray-800 flex-1 truncate">{t.title}</span>
                   {t.assigneeId && (
                     <span className="text-xs text-gray-400 flex-shrink-0 bg-gray-100 px-1.5 py-0.5 rounded-full">
-                      {STAFF_NAMES[t.assigneeId] ?? t.assigneeId}
+                      {staffList.find(s => s.staffId === t.assigneeId)?.name ?? t.assigneeId}
                     </span>
                   )}
                 </div>
@@ -180,7 +218,7 @@ export default function Dashboard() {
           <Link href="/map">
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-center gap-2.5 active:bg-blue-100 transition-colors">
               <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Map className="w-4.5 h-4.5 text-white" />
+                <Map className="w-5 h-5 text-white" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-800">会場マップ</p>
@@ -191,7 +229,7 @@ export default function Dashboard() {
           <Link href="/tetris">
             <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 flex items-center gap-2.5 active:bg-orange-100 transition-colors">
               <div className="w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Calendar className="w-4.5 h-4.5 text-white" />
+                <Calendar className="w-5 h-5 text-white" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-800">テトリス</p>
@@ -201,6 +239,56 @@ export default function Dashboard() {
           </Link>
         </div>
       </section>
+
+      {/* ─── 自分を選択ダイアログ ─── */}
+      <Dialog open={showMyselfDialog} onOpenChange={setShowMyselfDialog}>
+        <DialogContent className="max-w-xs mx-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCircle className="w-5 h-5 text-blue-600" />
+              あなたは誰ですか？
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-500 mb-3">
+            自分のカードが先頭に表示されます。
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {staffList.map((s) => {
+              const opt = STATUS_OPTIONS[s.status] ?? STATUS_OPTIONS["active"];
+              const isSelected = s.staffId === myStaffId;
+              return (
+                <button
+                  key={s.staffId}
+                  onClick={() => {
+                    setMyStaffId(s.staffId);
+                    setShowMyselfDialog(false);
+                  }}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all active:scale-95
+                    ${isSelected
+                      ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm"
+                      : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                    }`}
+                >
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ${opt.avatarBg}`}>
+                    {s.name.charAt(0)}
+                  </div>
+                  <span className="text-sm font-medium">{s.name}</span>
+                </button>
+              );
+            })}
+          </div>
+          <Button
+            variant="ghost"
+            className="w-full mt-1 text-gray-400 text-xs"
+            onClick={() => {
+              setMyStaffId(null);
+              setShowMyselfDialog(false);
+            }}
+          >
+            スキップ（選択しない）
+          </Button>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
