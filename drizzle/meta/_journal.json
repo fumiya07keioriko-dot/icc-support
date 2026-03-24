@@ -29,6 +29,20 @@
       "when": 1772505485455,
       "tag": "0003_ambitious_taskmaster",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1772577521230,
+      "tag": "0004_previous_scarecrow",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1774353462724,
+      "tag": "0005_futuristic_secret_warriors",
+      "breakpoints": true
     }
   ]
 }

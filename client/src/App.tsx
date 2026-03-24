@@ -4,35 +4,19 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { PinAuthProvider, usePinAuth } from "./contexts/PinAuthContext";
 import { MySelfProvider } from "./contexts/MySelfContext";
-import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Staff from "./pages/Staff";
 import Tasks from "./pages/Tasks";
 import VenueMap from "./pages/VenueMap";
 import Tetris from "./pages/Tetris";
 import Admin from "./pages/Admin";
-import { Loader2 } from "lucide-react";
 
-function AuthGate() {
-  const { authenticated, loading } = usePinAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-blue-900">
-        <Loader2 className="w-8 h-8 animate-spin text-white" />
-      </div>
-    );
-  }
-
-  if (!authenticated) {
-    return <Login />;
-  }
-
+function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
+      <Route path="/" component={Tasks} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/staff" component={Staff} />
       <Route path="/tasks" component={Tasks} />
       <Route path="/map" component={VenueMap} />
@@ -50,11 +34,9 @@ function App() {
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
-          <PinAuthProvider>
-            <MySelfProvider>
-              <AuthGate />
-            </MySelfProvider>
-          </PinAuthProvider>
+          <MySelfProvider>
+            <Router />
+          </MySelfProvider>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
