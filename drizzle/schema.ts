@@ -115,6 +115,17 @@ export const tasks = mysqlTable("tasks", {
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = typeof tasks.$inferInsert;
 
+/** タスク担当者中間テーブル（複数担当者対応） */
+export const taskAssignees = mysqlTable("task_assignees", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId").notNull(),
+  staffId: varchar("staffId", { length: 32 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TaskAssignee = typeof taskAssignees.$inferSelect;
+export type InsertTaskAssignee = typeof taskAssignees.$inferInsert;
+
 // ─────────────────────────────────────────────
 // テトリス（スケジュール）
 // ─────────────────────────────────────────────
