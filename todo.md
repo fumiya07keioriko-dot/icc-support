@@ -88,3 +88,9 @@
 - [ ] task.list / task.create / task.update routerを複数担当者対応に変更
 - [ ] Tasks.tsxのフォームをチェックボックス複数選択UIに変更
 - [ ] タスクカードに複数担当者を表示
+
+## 修正：ログイン機能削除
+- [x] PINコード認証機能を削除（ルーティング・コンテキスト・UI）
+- [x] App.tsxを修正してダッシュボードを直接表示
+- [x] Login.tsx・PinAuthContext.tsxを削除
+- [x] テスト更新・動作確認
