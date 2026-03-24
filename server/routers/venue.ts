@@ -8,12 +8,10 @@ import {
   getAllVenues,
   getAllAreas,
 } from "../db";
-import { validatePinSession } from "./auth";
 
 // ─── スタッフ router ──────────────────────────────────────────────────────────
 export const staffRouter = router({
   list: publicProcedure.query(async ({ ctx }) => {
-    if (!(await validatePinSession(ctx.req))) throw new TRPCError({ code: "UNAUTHORIZED" });
     const staffList = await getAllStaff();
     const statusList = await getAllStaffStatus();
     const venues = await getAllVenues();
@@ -46,7 +44,6 @@ export const staffRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!(await validatePinSession(ctx.req))) throw new TRPCError({ code: "UNAUTHORIZED" });
       await upsertStaffStatus(input);
       return { success: true };
     }),
@@ -55,7 +52,6 @@ export const staffRouter = router({
 // ─── 会場 router ──────────────────────────────────────────────────────────────
 export const venueRouter = router({
   list: publicProcedure.query(async ({ ctx }) => {
-    if (!(await validatePinSession(ctx.req))) throw new TRPCError({ code: "UNAUTHORIZED" });
     const venueList = await getAllVenues();
     const areaList = await getAllAreas();
     return venueList.map((v) => ({

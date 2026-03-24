@@ -24,76 +24,39 @@ function createCtx(cookies: Record<string, string> = {}): TrpcContext {
   };
 }
 
-// ─── PIN Auth Tests ───────────────────────────────────────────────────────────
-describe("pin.check (unauthenticated)", () => {
-  it("returns authenticated: false when no session cookie", async () => {
-    const caller = appRouter.createCaller(createCtx());
-    const result = await caller.pin.check();
-    expect(result.authenticated).toBe(false);
-  });
-});
-
-describe("pin.login", () => {
-  it("throws UNAUTHORIZED for wrong PIN", async () => {
-    const ctx = createCtx();
-    const caller = appRouter.createCaller(ctx);
-    await expect(
-      caller.pin.login({ pin: "9999", trusted: false })
-    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
-  });
-
-  it("successfully logs in with correct PIN (1234)", async () => {
-    let cookieSet = false;
-    const ctx = createCtx();
-    ctx.res.cookie = () => { cookieSet = true; };
-    const caller = appRouter.createCaller(ctx);
-    const result = await caller.pin.login({ pin: "1234", trusted: false });
-    expect(result.success).toBe(true);
-    expect(cookieSet).toBe(true);
-  });
-});
-
 // ─── Staff Tests ──────────────────────────────────────────────────────────────
-describe("staff.list (unauthenticated)", () => {
-  it("throws UNAUTHORIZED without session", async () => {
+describe("staff.list", () => {
+  it("returns staff list", async () => {
     const caller = appRouter.createCaller(createCtx());
-    await expect(caller.staff.list()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    const result = await caller.staff.list();
+    expect(Array.isArray(result)).toBe(true);
   });
 });
 
 // ─── Task Tests ───────────────────────────────────────────────────────────────
-describe("task.list (unauthenticated)", () => {
-  it("throws UNAUTHORIZED without session", async () => {
+describe("task.list", () => {
+  it("returns task list", async () => {
     const caller = appRouter.createCaller(createCtx());
-    await expect(
-      caller.task.list({ includeCompleted: false })
-    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    const result = await caller.task.list({ includeCompleted: false });
+    expect(Array.isArray(result)).toBe(true);
   });
 });
 
 // ─── Tetris Tests ─────────────────────────────────────────────────────────────
-describe("tetris.list (unauthenticated)", () => {
-  it("throws UNAUTHORIZED without session", async () => {
+describe("tetris.list", () => {
+  it("returns tetris entries", async () => {
     const caller = appRouter.createCaller(createCtx());
-    await expect(caller.tetris.list()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    const result = await caller.tetris.list();
+    expect(Array.isArray(result)).toBe(true);
   });
 });
 
 // ─── Venue Tests ──────────────────────────────────────────────────────────────
-describe("venue.list (unauthenticated)", () => {
-  it("throws UNAUTHORIZED without session", async () => {
+describe("venue.list", () => {
+  it("returns venue list", async () => {
     const caller = appRouter.createCaller(createCtx());
-    await expect(caller.venue.list()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
-  });
-});
-
-// ─── Admin Tests ──────────────────────────────────────────────────────────────
-describe("admin.changePin (unauthenticated)", () => {
-  it("throws UNAUTHORIZED without session", async () => {
-    const caller = appRouter.createCaller(createCtx());
-    await expect(
-      caller.admin.changePin({ adminPin: "1234", newPin: "5678", revokeAll: false })
-    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    const result = await caller.venue.list();
+    expect(Array.isArray(result)).toBe(true);
   });
 });
 

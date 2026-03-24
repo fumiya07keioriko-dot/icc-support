@@ -9,14 +9,12 @@ import {
   deleteTask,
   getTetrisEntries,
 } from "../db";
-import { validatePinSession } from "./auth";
 
 // ─── タスク router ────────────────────────────────────────────────────────────
 export const taskRouter = router({
   list: publicProcedure
     .input(z.object({ includeCompleted: z.boolean().default(false) }))
     .query(async ({ input, ctx }) => {
-      if (!(await validatePinSession(ctx.req))) throw new TRPCError({ code: "UNAUTHORIZED" });
       return getTasks(input.includeCompleted);
     }),
 
@@ -34,7 +32,6 @@ export const taskRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!(await validatePinSession(ctx.req))) throw new TRPCError({ code: "UNAUTHORIZED" });
       const id = await createTask({
         title: input.title,
         description: input.description ?? null,
@@ -65,7 +62,6 @@ export const taskRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!(await validatePinSession(ctx.req))) throw new TRPCError({ code: "UNAUTHORIZED" });
       const { id, ...data } = input;
       await updateTask(id, data as any);
       return { success: true };
@@ -74,7 +70,6 @@ export const taskRouter = router({
   delete: publicProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      if (!(await validatePinSession(ctx.req))) throw new TRPCError({ code: "UNAUTHORIZED" });
       await deleteTask(input.id);
       return { success: true };
     }),
@@ -83,15 +78,12 @@ export const taskRouter = router({
 // ─── テトリス router ──────────────────────────────────────────────────────────
 export const tetrisRouter = router({
   list: publicProcedure.query(async ({ ctx }) => {
-    if (!(await validatePinSession(ctx.req))) throw new TRPCError({ code: "UNAUTHORIZED" });
     return getTetrisEntries();
   }),
   syncStatus: publicProcedure.query(async ({ ctx }) => {
-    if (!(await validatePinSession(ctx.req))) throw new TRPCError({ code: "UNAUTHORIZED" });
     return getLastSyncResult();
   }),
   manualSync: publicProcedure.mutation(async ({ ctx }) => {
-    if (!(await validatePinSession(ctx.req))) throw new TRPCError({ code: "UNAUTHORIZED" });
     const result = await syncTetrisFromSheets();
     return result;
   }),

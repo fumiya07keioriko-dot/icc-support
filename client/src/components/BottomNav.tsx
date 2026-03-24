@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, CheckSquare, Map, Calendar, Settings } from "lucide-react";
+import { LayoutDashboard, Users, CheckSquare, Map, Calendar } from "lucide-react";
 
 const NAV_ITEMS = [
   { path: "/", label: "ホーム", icon: LayoutDashboard },
@@ -7,7 +7,6 @@ const NAV_ITEMS = [
   { path: "/tasks", label: "タスク", icon: CheckSquare },
   { path: "/map", label: "マップ", icon: Map },
   { path: "/tetris", label: "テトリス", icon: Calendar },
-  { path: "/admin", label: "管理", icon: Settings },
 ];
 
 export default function BottomNav() {
