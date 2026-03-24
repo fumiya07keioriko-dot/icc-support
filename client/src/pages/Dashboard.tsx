@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import AppLayout from "@/components/AppLayout";
 import { Users, CheckSquare, Map, Calendar, AlertCircle, Clock, ChevronRight, MapPin, UserCircle } from "lucide-react";
+import { usePinAuth } from "@/contexts/PinAuthContext";
 import { useMyself } from "@/contexts/MySelfContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ function formatRelativeTime(date: Date | null | undefined): string {
 }
 
 export default function Dashboard() {
+  const { logout } = usePinAuth();
   const { myStaffId, setMyStaffId } = useMyself();
   const staffQuery = trpc.staff.list.useQuery();
   const taskQuery = trpc.task.list.useQuery({ includeCompleted: false });
@@ -79,7 +81,9 @@ export default function Dashboard() {
             <UserCircle className="w-3.5 h-3.5" />
             <span>{myStaff ? myStaff.name : "自分を選択"}</span>
           </button>
-
+          <button onClick={logout} className="text-blue-200 text-xs hover:text-white px-2 py-1">
+            ログアウト
+          </button>
         </div>
       }
     >
